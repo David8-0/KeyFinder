@@ -1,0 +1,181 @@
+const { AppointmentModel } = require("../models/appointment.Model");
+const { successResponse, errorResponse } = require('../utils/helpers');
+
+exports.getAllAppointments = async (req, res) => {
+  try {
+    const appointments = await AppointmentModel.find({})
+      .populate('buyerId')
+      .populate('brokerId')
+      .populate('propertyId');
+    
+    return res.status(200).json(successResponse(appointments));
+  } catch (error) {
+    console.error('Get appointments error:', error);
+    return res.status(500).json(errorResponse('Server error while fetching appointments.'));
+  }
+};
+
+exports.getAppointmentById = async (req, res) => {
+  try {
+    const appointment = await AppointmentModel.findById(req.params.id)
+      .populate('buyerId', 'username email')
+      .populate('brokerId', 'username email')
+      .populate('propertyId', 'title price');
+    
+    if (!appointment) {
+      return res.status(404).json(errorResponse('Appointment not found.', 404));
+    }
+    return res.status(200).json(successResponse(appointment));
+  } catch (error) {
+    console.error('Get appointment error:', error);
+    return res.status(500).json(errorResponse('Server error while fetching appointment.'));
+  }
+};
+
+exports.createAppointment = async (req, res) => {
+  try {
+    const { buyerId, brokerId, propertyId, appointmentDate, type } = req.body;
+    
+    // Basic validation
+    if (!buyerId || !brokerId || !propertyId || !appointmentDate || !type) {
+      return res.status(400).json(errorResponse('All required fields must be provided.'));
+    }
+
+    // Validate appointment type
+    if (!['initial', 'payment'].includes(type)) {
+      return res.status(400).json(errorResponse('Invalid appointment type. Must be either "initial" or "payment".'));
+    }
+
+    // Validate appointment date is in the future
+    const appointmentDateTime = new Date(appointmentDate);
+    if (appointmentDateTime < new Date()) {
+      return res.status(400).json(errorResponse('Appointment date must be in the future.'));
+    }
+
+    const appointment = new AppointmentModel({
+      buyerId,
+      brokerId,
+      propertyId,
+      appointmentDate: appointmentDateTime,
+      type,
+      status: 'scheduled'
+    });
+
+    await appointment.save();
+    
+    return res.status(201).json(successResponse({
+      message: 'Appointment created successfully.',
+      appointment
+    }));
+  } catch (error) {
+    console.error('Create appointment error:', error);
+    if (error.name === 'ValidationError') {
+      return res.status(400).json(errorResponse(error.message));
+    }
+    return res.status(500).json(errorResponse('Server error while creating appointment.'));
+  }
+};
+
+exports.updateAppointment = async (req, res) => {
+  try {
+    const { appointmentDate, status, type } = req.body;
+    const appointmentId = req.params.id;
+
+    const appointment = await AppointmentModel.findById(appointmentId);
+    if (!appointment) {
+      return res.status(404).json(errorResponse('Appointment not found.', 404));
+    }
+
+    // Update appointment fields
+    if (appointmentDate) {
+      const newDate = new Date(appointmentDate);
+      if (newDate < new Date()) {
+        return res.status(400).json(errorResponse('Appointment date must be in the future.'));
+      }
+      appointment.appointmentDate = newDate;
+    }
+
+    if (status) {
+      if (!['scheduled', 'cancelled', 'completed', 'awaiting_payment'].includes(status)) {
+        return res.status(400).json(errorResponse('Invalid appointment status.'));
+      }
+      appointment.status = status;
+    }
+
+    if (type) {
+      if (!['initial', 'payment'].includes(type)) {
+        return res.status(400).json(errorResponse('Invalid appointment type.'));
+      }
+      appointment.type = type;
+    }
+
+    await appointment.save();
+    
+    return res.status(200).json(successResponse({
+      message: 'Appointment updated successfully.',
+      appointment
+    }));
+  } catch (error) {
+    console.error('Update appointment error:', error);
+    if (error.name === 'ValidationError') {
+      return res.status(400).json(errorResponse(error.message));
+    }
+    return res.status(500).json(errorResponse('Server error while updating appointment.'));
+  }
+};
+
+exports.deleteAppointment = async (req, res) => {
+  try {
+    const appointmentId = req.params.id;
+    const appointment = await AppointmentModel.findByIdAndDelete(appointmentId);
+    
+    if (!appointment) {
+      return res.status(404).json(errorResponse('Appointment not found.', 404));
+    }
+
+    return res.status(200).json(successResponse({
+      message: 'Appointment deleted successfully.'
+    }));
+  } catch (error) {
+    console.error('Delete appointment error:', error);
+    return res.status(500).json(errorResponse('Server error while deleting appointment.'));
+  }
+};
+
+exports.addFeedback = async (req, res) => {
+  try {
+    const { brokerId, propertyId, status, reservationMade } = req.body;
+    const appointmentId = req.params.id;
+
+    if (!brokerId || !propertyId || !status) {
+      return res.status(400).json(errorResponse('Broker ID, property ID, and status are required.'));
+    }
+
+    if (!['liked', 'not_liked'].includes(status)) {
+      return res.status(400).json(errorResponse('Invalid feedback status.'));
+    }
+
+    const appointment = await AppointmentModel.findById(appointmentId);
+    if (!appointment) {
+      return res.status(404).json(errorResponse('Appointment not found.', 404));
+    }
+
+    // Add new feedback
+    appointment.feedbacks.push({
+      brokerId,
+      propertyId,
+      status,
+      reservationMade: reservationMade || false
+    });
+
+    await appointment.save();
+    
+    return res.status(200).json(successResponse({
+      message: 'Feedback added successfully.',
+      appointment
+    }));
+  } catch (error) {
+    console.error('Add feedback error:', error);
+    return res.status(500).json(errorResponse('Server error while adding feedback.'));
+  }
+}; 

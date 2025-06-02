@@ -10,7 +10,7 @@ const FeedbackSchema = new Schema({
     required: true
   },
   reservationMade: { type: Boolean, default: false }
-}, { _id: false });
+});
 
 const AppointmentSchema = new Schema({
   buyerId: { type: Schema.Types.ObjectId, ref: 'User', required: true },

@@ -25,7 +25,7 @@ const PropertySchema = new Schema({
     default: 'available'
   },
   images: [{ type: String }]
-}, { _id: false });
+});
 
 const ProjectSchema = new Schema({
   name: { type: String, required: true },
