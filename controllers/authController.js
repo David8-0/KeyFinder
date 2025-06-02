@@ -302,4 +302,36 @@ exports.validateOtp = async (req, res) => {
   }
 };
 
+exports.protect = async (req, res, next) => {
+  try {
+    // 1. Check if token exists in headers
+    if (!req.headers.authorization || !req.headers.authorization.startsWith('Bearer')) {
+      return res.status(401).json(errorResponse('Please log in to access this resource.', 401));
+    }
+
+    // 2. Get token from header
+    const token = req.headers.authorization.split(' ')[1];
+
+    // 3. Verify token
+    jwt.verify(token, process.env.JWT_SECRET || 'your_jwt_secret', async (err, decoded) => {
+      if (err) {
+        return res.status(401).json(errorResponse('Invalid token. Please log in again.', 401));
+      }
+
+      // 4. Check if user still exists
+      const currentUser = await userModel.findById(decoded.userId);
+      if (!currentUser) {
+        return res.status(401).json(errorResponse('The user belonging to this token no longer exists.', 401));
+      }
+
+      // 5. Grant access to protected route
+      req.user = currentUser;
+      next();
+    });
+  } catch (error) {
+    console.error('Protect middleware error:', error);
+    return res.status(500).json(errorResponse('Error in authentication middleware.'));
+  }
+};
+
 

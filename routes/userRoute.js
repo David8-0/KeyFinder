@@ -1,14 +1,15 @@
 const express = require('express');
 const router = express.Router();
 const userController = require("../controllers/userController.js");
+const authController = require("../controllers/authController.js");
 
 // Admin only routes
-router.get("/", userController.getAllUsers);
+router.get("/", authController.protect, userController.getAllUsers);
 
 // User routes
-router.get("/:id", userController.getUserById);
-router.put("/:id", userController.updateUser);
-router.delete("/:id", userController.deleteUser);
+router.get("/:id",authController.protect, userController.getUserById);
+router.put("/:id",authController.protect, userController.updateUser);
+router.delete("/:id",authController.protect, userController.deleteUser);
 
 
 module.exports = router;
