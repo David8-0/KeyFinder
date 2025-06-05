@@ -30,6 +30,7 @@ const PropertySchema = new Schema({
 const ProjectSchema = new Schema({
   name: { type: String, required: true },
   description: { type: String },
+  image: { type: String },
   location: {
     type: {
       type: String,

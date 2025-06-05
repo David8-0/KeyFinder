@@ -38,7 +38,7 @@ exports.resizeImages = async (req, res, next) => {
                 .toFormat('jpeg')
                 .jpeg({ quality: 100 })
                 .toFile(`public/images/${validType}/${ImageFileName}.jpg`);
-            req.body.images = `${process.env.HOSTING_URL}/images/${validType}/${ImageFileName}.jpg`;
+            req.body.images = `http://${process.env.HOSTING_URL}/images/${validType}/${ImageFileName}.jpg`;
         }
         else {
             req.body.images = [];
@@ -50,7 +50,7 @@ exports.resizeImages = async (req, res, next) => {
                         .toFormat('jpeg')
                         .jpeg({ quality: 100 })
                         .toFile(`public/images/${validType}/${imageFileName}.jpg`);
-                    req.body.images.push(`${process.env.HOSTING_URL}/images/${validType}/${imageFileName}.jpg`)
+                    req.body.images.push(`http://${process.env.HOSTING_URL}/images/${validType}/${imageFileName}.jpg`)
                 })
             )
         }

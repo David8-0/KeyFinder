@@ -27,7 +27,7 @@ exports.getProjectById = async (req, res) => {
 
 exports.createProject = async (req, res) => {
   try {
-    const { name, description, location, developer, properties } = req.body;
+    const { name, description, location, developer, properties, image } = req.body;
     
     // Basic validation
     if (!name || !location || !location.coordinates) {
@@ -37,6 +37,7 @@ exports.createProject = async (req, res) => {
     const project = new ProjectModel({
       name,
       description,
+      image,
       location: {
         type: 'Point',
         coordinates: location.coordinates
@@ -112,5 +113,65 @@ exports.deleteProject = async (req, res) => {
   } catch (error) {
     console.error('Delete project error:', error);
     return res.status(500).json(errorResponse('Server error while deleting project.'));
+  }
+};
+
+exports.searchForProperties = async (req, res) => {
+  try {
+    const { type, areaRange, priceRange, all } = req.body;
+
+    // If 'all' is true, return all properties without filtering
+    if (all === true) {
+      const projects = await ProjectModel.find({}).populate('properties');
+      const allProperties = projects.reduce((acc, project) => {
+        return [...acc, ...project.properties];
+      }, []);
+
+      return res.status(200).json(successResponse({
+        count: allProperties.length,
+        properties: allProperties
+      }));
+    }
+
+    // Validate that all required parameters are provided
+    if (!type || !areaRange || !priceRange) {
+      return res.status(400).json(errorResponse('Type, areaRange, and priceRange are required when not requesting all properties.'));
+    }
+
+    // Validate enum values
+    const validTypes = ['chalet', 'apartment', 'twin_villa', 'standalone_villa'];
+    const validAreaRanges = ['less_than_100', '100_to_150', '150_to_200', 'over_200'];
+    const validPriceRanges = ['2_to_3_million', '3_to_4_million', '4_to_5_million', 'over_5_million'];
+
+    if (!validTypes.includes(type)) {
+      return res.status(400).json(errorResponse('Invalid property type.'));
+    }
+    if (!validAreaRanges.includes(areaRange)) {
+      return res.status(400).json(errorResponse('Invalid area range.'));
+    }
+    if (!validPriceRanges.includes(priceRange)) {
+      return res.status(400).json(errorResponse('Invalid price range.'));
+    }
+
+    // Find all projects and filter properties
+    const projects = await ProjectModel.find({}).populate('properties');
+    
+    // Collect all matching properties
+    const matchingProperties = projects.reduce((acc, project) => {
+      const matchingProps = project.properties.filter(property => 
+        property.type === type &&
+        property.areaRange === areaRange &&
+        property.priceRange === priceRange
+      );
+      return [...acc, ...matchingProps];
+    }, []);
+
+    return res.status(200).json(successResponse({
+      count: matchingProperties.length,
+      properties: matchingProperties
+    }));
+  } catch (error) {
+    console.error('Search properties error:', error);
+    return res.status(500).json(errorResponse('Server error while searching properties.'));
   }
 };
