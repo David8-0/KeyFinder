@@ -25,6 +25,34 @@ exports.getProjectById = async (req, res) => {
   }
 };
 
+exports.getPropertyById = async (req, res) => {
+  try {
+    const propertyId = req.params.id;
+    
+    // Find all projects and search for the property
+    const projects = await ProjectModel.find({}).populate('properties');
+    let foundProperty = null;
+    
+    // Search through all projects to find the property
+    for (const project of projects) {
+      const property = project.properties.find(p => p._id.toString() === propertyId);
+      if (property) {
+        foundProperty = property;
+        break;
+      }
+    }
+    
+    if (!foundProperty) {
+      return res.status(404).json(errorResponse('Property not found.', 404));
+    }
+    
+    return res.status(200).json(successResponse(foundProperty));
+  } catch (error) {
+    console.error('Get property error:', error);
+    return res.status(500).json(errorResponse('Server error while fetching property.'));
+  }
+};
+
 exports.createProject = async (req, res) => {
   try {
     const { name, description, location, developer, properties, image } = req.body;
@@ -32,6 +60,18 @@ exports.createProject = async (req, res) => {
     // Basic validation
     if (!name || !location || !location.coordinates) {
       return res.status(400).json(errorResponse('Name and location with coordinates are required.'));
+    }
+
+    // Validate properties if provided
+    if (properties && Array.isArray(properties)) {
+      for (const property of properties) {
+        if (!property.bedrooms || !property.bathrooms) {
+          return res.status(400).json(errorResponse('Bedrooms and bathrooms are required for each property.'));
+        }
+        if (property.bedrooms < 1 || property.bathrooms < 1) {
+          return res.status(400).json(errorResponse('Bedrooms and bathrooms must be at least 1.'));
+        }
+      }
     }
 
     const project = new ProjectModel({
@@ -63,12 +103,24 @@ exports.createProject = async (req, res) => {
 
 exports.updateProject = async (req, res) => {
   try {
-    const { name, description, location, developer, properties } = req.body;
+    const { name, description, location, developer, properties, image } = req.body;
     const projectId = req.params.id;
 
     const project = await ProjectModel.findById(projectId);
     if (!project) {
       return res.status(404).json(errorResponse('Project not found.', 404));
+    }
+
+    // Validate properties if provided
+    if (properties && Array.isArray(properties)) {
+      for (const property of properties) {
+        if (!property.bedrooms || !property.bathrooms) {
+          return res.status(400).json(errorResponse('Bedrooms and bathrooms are required for each property.'));
+        }
+        if (property.bedrooms < 1 || property.bathrooms < 1) {
+          return res.status(400).json(errorResponse('Bedrooms and bathrooms must be at least 1.'));
+        }
+      }
     }
 
     // Update project fields
@@ -82,7 +134,7 @@ exports.updateProject = async (req, res) => {
     }
     if (developer !== undefined) project.developer = developer;
     if (properties !== undefined) project.properties = properties;
-
+    if (image !== undefined) project.image = image;
     await project.save();
     
     return res.status(200).json(successResponse({
@@ -118,53 +170,52 @@ exports.deleteProject = async (req, res) => {
 
 exports.searchForProperties = async (req, res) => {
   try {
-    const { type, areaRange, priceRange, all } = req.body;
+    const { type, areaRange, priceRange, key } = req.body;
 
-    // If 'all' is true, return all properties without filtering
-    if (all === true) {
-      const projects = await ProjectModel.find({}).populate('properties');
-      const allProperties = projects.reduce((acc, project) => {
-        return [...acc, ...project.properties];
-      }, []);
-
-      return res.status(200).json(successResponse({
-        count: allProperties.length,
-        properties: allProperties
-      }));
-    }
-
-    // Validate that all required parameters are provided
-    if (!type || !areaRange || !priceRange) {
-      return res.status(400).json(errorResponse('Type, areaRange, and priceRange are required when not requesting all properties.'));
-    }
-
-    // Validate enum values
-    const validTypes = ['chalet', 'apartment', 'twin_villa', 'standalone_villa'];
-    const validAreaRanges = ['less_than_100', '100_to_150', '150_to_200', 'over_200'];
-    const validPriceRanges = ['2_to_3_million', '3_to_4_million', '4_to_5_million', 'over_5_million'];
-
-    if (!validTypes.includes(type)) {
-      return res.status(400).json(errorResponse('Invalid property type.'));
-    }
-    if (!validAreaRanges.includes(areaRange)) {
-      return res.status(400).json(errorResponse('Invalid area range.'));
-    }
-    if (!validPriceRanges.includes(priceRange)) {
-      return res.status(400).json(errorResponse('Invalid price range.'));
-    }
-
-    // Find all projects and filter properties
+    // Find all projects and get their properties
     const projects = await ProjectModel.find({}).populate('properties');
-    
-    // Collect all matching properties
-    const matchingProperties = projects.reduce((acc, project) => {
-      const matchingProps = project.properties.filter(property => 
-        property.type === type &&
-        property.areaRange === areaRange &&
+    let matchingProperties = projects.reduce((acc, project) => {
+      return [...acc, ...project.properties];
+    }, []);
+
+    // Apply filters only if they are provided
+    if (type) {
+      const validTypes = ['chalet', 'apartment', 'twin_villa', 'standalone_villa'];
+      if (!validTypes.includes(type)) {
+        return res.status(400).json(errorResponse('Invalid property type.'));
+      }
+      matchingProperties = matchingProperties.filter(property => 
+        property.type === type
+      );
+    }
+
+    if (areaRange) {
+      const validAreaRanges = ['less_than_100', '100_to_150', '150_to_200', 'over_200'];
+      if (!validAreaRanges.includes(areaRange)) {
+        return res.status(400).json(errorResponse('Invalid area range.'));
+      }
+      matchingProperties = matchingProperties.filter(property => 
+        property.areaRange === areaRange
+      );
+    }
+
+    if (priceRange) {
+      const validPriceRanges = ['2_to_3_million', '3_to_4_million', '4_to_5_million', 'over_5_million'];
+      if (!validPriceRanges.includes(priceRange)) {
+        return res.status(400).json(errorResponse('Invalid price range.'));
+      }
+      matchingProperties = matchingProperties.filter(property => 
         property.priceRange === priceRange
       );
-      return [...acc, ...matchingProps];
-    }, []);
+    }
+
+    // Apply key search if provided
+    if (key) {
+      const searchKey = key.toLowerCase();
+      matchingProperties = matchingProperties.filter(property => 
+        property.title.toLowerCase().includes(searchKey)
+      );
+    }
 
     return res.status(200).json(successResponse({
       count: matchingProperties.length,

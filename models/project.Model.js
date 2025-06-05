@@ -19,6 +19,16 @@ const PropertySchema = new Schema({
     enum: ['2_to_3_million', '3_to_4_million', '4_to_5_million', 'over_5_million'],
     required: true
   },
+  bedrooms: {
+    type: Number,
+    required: true,
+    min: 1
+  },
+  bathrooms: {
+    type: Number,
+    required: true,
+    min: 1
+  },
   status: {
     type: String,
     enum: ['available', 'reserved', 'sold'],
