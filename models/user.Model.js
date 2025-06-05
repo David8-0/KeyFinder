@@ -28,8 +28,8 @@ const UserSchema = new Schema({
   },
   changecredentials: Date,
   favourites: [{
-    propertyId: { type: Schema.Types.ObjectId, ref: 'Property', required: true },
-    createdAt: { type: Date, default: Date.now }
+    project: { type: Schema.Types.ObjectId, ref: 'Project' },
+    property: { type: Schema.Types.ObjectId }
   }]
 }, { timestamps: true });
 

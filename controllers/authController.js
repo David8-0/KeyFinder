@@ -64,7 +64,7 @@ exports.login = async (req, res) => {
       return res.status(400).json(errorResponse('Email and password are required.', 400));
     }
 
-    const user = await userModel.findOne({ email });
+    const user = await userModel.findOne({ email }).populate('favourites');
     if (!user) {
       return res.status(404).json({ message: 'User not found.' });
     }
@@ -92,7 +92,9 @@ exports.login = async (req, res) => {
         id: user._id,
         username: user.username,
         email: user.email,
-        role: user.role
+        role: user.role,
+        favourites: user.favourites,
+        phone: user.phone,
       }
     }));
   } catch (error) {

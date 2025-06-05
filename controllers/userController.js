@@ -1,6 +1,8 @@
 const { userModel, roletypes } = require("../models/user.Model");
+const { ProjectModel } = require("../models/project.Model");
 const bcrypt = require('bcrypt');
 const { successResponse, errorResponse } = require('../utils/helpers');
+const mongoose = require('mongoose');
 
 exports.getAllUsers = async (req, res) => {
   try {
@@ -92,5 +94,95 @@ exports.deleteUser = async (req, res) => {
   } catch (error) {
     console.error('Delete user error:', error);
     return res.status(500).json(errorResponse('Server error while deleting user.'));
+  }
+};
+
+// Add property to favorites
+exports.addToFavorites = async (req, res) => {
+  try {
+    // Get user from the protect middleware
+    const user = req.user;
+    const propertyId = req.params.propertyId;
+
+    // Validate property ID format
+    if (!mongoose.Types.ObjectId.isValid(propertyId)) {
+      return res.status(400).json(errorResponse('Invalid property ID format.', 400));
+    }
+
+    // Check if property exists and get its project
+    const project = await ProjectModel.findOne({ 'properties._id': propertyId });
+    if (!project) {
+      return res.status(404).json(errorResponse('Property not found.', 404));
+    }
+
+    // Convert string ID to ObjectId
+    const propertyObjectId = new mongoose.Types.ObjectId(propertyId);
+
+    // Check if property is already in favorites
+    if (user.favourites.some(fav => fav.property.toString() === propertyId)) {
+      return res.status(400).json(errorResponse('Property is already in favorites.', 400));
+    }
+
+    // Add property to favorites with both project and property IDs
+    user.favourites.push({
+      project: project._id,
+      property: propertyObjectId
+    });
+    await user.save();
+
+    // Populate project details
+    await user.populate('favourites.project');
+
+    return res.status(200).json(successResponse({
+      message: 'Property added to favorites successfully.',
+      favourites: user.favourites
+    }));
+  } catch (error) {
+    console.error('Add to favorites error:', error);
+    return res.status(500).json(errorResponse('Server error while adding to favorites.'));
+  }
+};
+
+// Remove property from favorites
+exports.removeFromFavorites = async (req, res) => {
+  try {
+    // Get user from the protect middleware
+    const user = req.user;
+    const propertyId = req.params.propertyId;
+
+    // Validate property ID format
+    if (!mongoose.Types.ObjectId.isValid(propertyId)) {
+      return res.status(400).json(errorResponse('Invalid property ID format.', 400));
+    }
+
+    // Check if property exists
+    const project = await ProjectModel.findOne({ 'properties._id': propertyId });
+    if (!project) {
+      return res.status(404).json(errorResponse('Property not found.', 404));
+    }
+
+    // Find the favorite entry
+    const favoriteIndex = user.favourites.findIndex(fav => 
+      fav.property && fav.property.toString() === propertyId
+    );
+
+    if (favoriteIndex === -1) {
+      return res.status(404).json(errorResponse('Property is not in favorites.', 404));
+    }
+
+    // Remove the property from favorites
+    user.favourites.splice(favoriteIndex, 1);
+    await user.save();
+
+    // Populate remaining favorites
+    await user.populate('favourites.project');
+
+    return res.status(200).json(successResponse({
+      message: 'Property removed from favorites successfully.',
+      favourites: user.favourites
+    }));
+  } catch (error) {
+    console.error('Remove from favorites error:', error);
+    return res.status(500).json(errorResponse('Server error while removing from favorites.'));
   }
 };
