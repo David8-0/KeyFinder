@@ -336,4 +336,30 @@ exports.protect = async (req, res, next) => {
   }
 };
 
+exports.getLoggedInUser = async (req, res) => {
+  try {
+    const userId = req.user._id; // Get user ID from the authenticated request
+
+    const user = await userModel.findById(userId).populate('favourites');
+    if (!user) {
+      return res.status(404).json(errorResponse('User not found.', 404));
+    }
+
+    return res.status(200).json(successResponse({
+      message: 'User retrieved successfully',
+      user: {
+        id: user._id,
+        username: user.username,
+        email: user.email,
+        role: user.role,
+        favourites: user.favourites,
+        phone: user.phone,
+      }
+    }));
+  } catch (error) {
+    console.error('Get logged in user error:', error);
+    return res.status(500).json(errorResponse('Server error while fetching user data.'));
+  }
+};
+
 

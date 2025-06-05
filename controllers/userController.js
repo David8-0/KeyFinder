@@ -186,3 +186,38 @@ exports.removeFromFavorites = async (req, res) => {
     return res.status(500).json(errorResponse('Server error while removing from favorites.'));
   }
 };
+
+exports.getUserFavorites = async (req, res) => {
+  try {
+    // Get user from the protect middleware
+    const user = req.user;
+
+    // Get all projects that contain the favorite properties
+    const projectIds = user.favourites.map(fav => fav.project);
+    const propertyIds = user.favourites.map(fav => fav.property);
+
+    // Find all projects that contain the favorite properties
+    const projects = await ProjectModel.find({
+      _id: { $in: projectIds }
+    });
+
+    // Create a map of properties from all projects
+    const allProperties = projects.reduce((acc, project) => {
+      return [...acc, ...project.properties];
+    }, []);
+
+    // Filter only the favorite properties
+    const favoriteProperties = allProperties.filter(property => 
+      propertyIds.some(id => id.toString() === property._id.toString())
+    );
+
+    return res.status(200).json(successResponse({
+      message: 'Favorite properties retrieved successfully.',
+      properties: favoriteProperties
+    }));
+  } catch (error) {
+    console.error('Get user favorites error:', error);
+    return res.status(500).json(errorResponse('Server error while fetching favorite properties.'));
+  }
+};
+

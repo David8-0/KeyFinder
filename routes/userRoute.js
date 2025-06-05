@@ -7,10 +7,11 @@ const authController = require("../controllers/authController.js");
 router.get("/", authController.protect, userController.getAllUsers);
 
 // User routes
-router.get("/:id",authController.protect, userController.getUserById);
+router.get("/user/:id",authController.protect, userController.getUserById);
 router.put("/:id",authController.protect, userController.updateUser);
 router.delete("/:id",authController.protect, userController.deleteUser);
 router.post("/:propertyId/add-to-favorites", authController.protect, userController.addToFavorites);
 router.delete("/:propertyId/remove-from-favorites", authController.protect, userController.removeFromFavorites);
-
+router.get("/favorites", authController.protect, userController.getUserFavorites);
+ 
 module.exports = router;
