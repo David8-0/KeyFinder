@@ -1,14 +1,31 @@
 const { AppointmentModel } = require("../models/appointment.Model");
+const { ProjectModel } = require("../models/project.Model");
 const { successResponse, errorResponse } = require('../utils/helpers');
 
 exports.getAllAppointments = async (req, res) => {
   try {
     const appointments = await AppointmentModel.find({})
       .populate('buyerId')
-      .populate('brokerId')
-      .populate('propertyId');
+      .populate('brokerId');
     
-    return res.status(200).json(successResponse(appointments));
+    const projects = await ProjectModel.find({}).lean();
+    const findPropertyById = (propertyId) => {
+      for (const project of projects) {
+        if (!Array.isArray(project.properties)) continue;
+        const property = project.properties.find(
+          (p) => p && p._id && p._id.toString() === propertyId?.toString()
+        );
+        if (property) return property;
+      }
+      return null;
+    };
+
+    const appointmentsWithProperty = appointments.map((appt) => {
+      const apptObj = appt.toObject();
+      apptObj.property = findPropertyById(appt.propertyId);
+      return apptObj;
+    });
+    return res.status(200).json(successResponse(appointmentsWithProperty));
   } catch (error) {
     console.error('Get appointments error:', error);
     return res.status(500).json(errorResponse('Server error while fetching appointments.'));
@@ -19,13 +36,25 @@ exports.getAppointmentById = async (req, res) => {
   try {
     const appointment = await AppointmentModel.findById(req.params.id)
       .populate('buyerId', 'username email')
-      .populate('brokerId', 'username email')
-      .populate('propertyId', 'title price');
-    
+      .populate('brokerId', 'username email');
     if (!appointment) {
       return res.status(404).json(errorResponse('Appointment not found.', 404));
     }
-    return res.status(200).json(successResponse(appointment));
+    const projects = await ProjectModel.find({}).lean();
+    const findPropertyById = (propertyId) => {
+      for (const project of projects) {
+        if (!Array.isArray(project.properties)) continue;
+        const property = project.properties.find(
+          (p) => p && p._id && p._id.toString() === propertyId?.toString()
+        );
+        if (property) return property;
+      }
+      return null;
+    };
+
+    const appointmentObj = appointment.toObject();
+    appointmentObj.property = findPropertyById(appointment.propertyId);
+    return res.status(200).json(successResponse(appointmentObj));
   } catch (error) {
     console.error('Get appointment error:', error);
     return res.status(500).json(errorResponse('Server error while fetching appointment.'));
