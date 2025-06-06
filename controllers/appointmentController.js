@@ -207,4 +207,43 @@ exports.addFeedback = async (req, res) => {
     console.error('Add feedback error:', error);
     return res.status(500).json(errorResponse('Server error while adding feedback.'));
   }
+};
+
+exports.getMyAppointments = async (req, res) => {
+  try {
+    const userId = req.user.id; // Get user ID from protect middleware
+    
+    // Find appointments where user is either buyer or broker
+    const appointments = await AppointmentModel.find({
+      $or: [
+        { buyerId: userId },
+        { brokerId: userId }
+      ]
+    })
+    .populate('buyerId', 'username email')
+    .populate('brokerId', 'username email');
+
+    const projects = await ProjectModel.find({}).lean();
+    const findPropertyById = (propertyId) => {
+      for (const project of projects) {
+        if (!Array.isArray(project.properties)) continue;
+        const property = project.properties.find(
+          (p) => p && p._id && p._id.toString() === propertyId?.toString()
+        );
+        if (property) return property;
+      }
+      return null;
+    };
+
+    const appointmentsWithProperty = appointments.map((appt) => {
+      const apptObj = appt.toObject();
+      apptObj.property = findPropertyById(appt.propertyId);
+      return apptObj;
+    });
+
+    return res.status(200).json(successResponse(appointmentsWithProperty));
+  } catch (error) {
+    console.error('Get my appointments error:', error);
+    return res.status(500).json(errorResponse('Server error while fetching appointments.'));
+  }
 }; 
