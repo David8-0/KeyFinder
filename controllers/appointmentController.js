@@ -81,6 +81,28 @@ exports.createAppointment = async (req, res) => {
       return res.status(400).json(errorResponse('Appointment date must be in the future.'));
     }
 
+    // Find the project containing the property
+    const project = await ProjectModel.findOne({ 'properties._id': propertyId });
+    if (!project) {
+      return res.status(404).json(errorResponse('Property not found.'));
+    }
+
+    // Find the property in the project
+    const property = project.properties.id(propertyId);
+    if (!property) {
+      return res.status(404).json(errorResponse('Property not found.'));
+    }
+
+    // Update property status based on appointment type
+    if (type === 'initial') {
+      property.status = 'reserved';
+    } else if (type === 'payment') {
+      property.status = 'sold';
+    }
+
+    // Save the project to update the property status
+    await project.save();
+
     const appointment = new AppointmentModel({
       buyerId,
       brokerId,
@@ -125,7 +147,7 @@ exports.updateAppointment = async (req, res) => {
     }
 
     if (status) {
-      if (!['scheduled', 'cancelled', 'completed', 'awaiting_payment'].includes(status)) {
+      if (!['scheduled', 'cancelled', 'completed', 'awaiting_payment','awaiting_payment_confirmation'].includes(status)) {
         return res.status(400).json(errorResponse('Invalid appointment status.'));
       }
       appointment.status = status;
@@ -135,6 +157,29 @@ exports.updateAppointment = async (req, res) => {
       if (!['initial', 'payment'].includes(type)) {
         return res.status(400).json(errorResponse('Invalid appointment type.'));
       }
+
+      // Find the project containing the property
+      const project = await ProjectModel.findOne({ 'properties._id': appointment.propertyId });
+      if (!project) {
+        return res.status(404).json(errorResponse('Property not found.'));
+      }
+
+      // Find the property in the project
+      const property = project.properties.id(appointment.propertyId);
+      if (!property) {
+        return res.status(404).json(errorResponse('Property not found.'));
+      }
+
+      // Update property status based on appointment type
+      // if (status &&  status !== 'completed') {
+      //   property.status = 'reserved';
+      // } else if (type === 'payment') {
+      //   property.status = 'sold';
+      // }
+
+      // Save the project to update the property status
+      await project.save();
+      
       appointment.type = type;
     }
 
@@ -156,12 +201,33 @@ exports.updateAppointment = async (req, res) => {
 exports.deleteAppointment = async (req, res) => {
   try {
     const appointmentId = req.params.id;
-    const appointment = await AppointmentModel.findByIdAndDelete(appointmentId);
-    
+
+    const appointment = await AppointmentModel.findById(appointmentId);
     if (!appointment) {
       return res.status(404).json(errorResponse('Appointment not found.', 404));
     }
 
+    // Find the project containing the property
+    const project = await ProjectModel.findOne({ 'properties._id': appointment.propertyId });
+    if (!project) {
+      return res.status(404).json(errorResponse('Property not found.'));
+    }
+
+    // Find the property in the project
+    const property = project.properties.id(appointment.propertyId);
+    if (!property) {
+      return res.status(404).json(errorResponse('Property not found.'));
+    }
+
+    // Set property status back to available
+    property.status = 'available';
+
+    // Save the project to update the property status
+    await project.save();
+
+    // Delete the appointment
+    await AppointmentModel.findByIdAndDelete(appointmentId);
+    
     return res.status(200).json(successResponse({
       message: 'Appointment deleted successfully.'
     }));

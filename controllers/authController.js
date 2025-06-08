@@ -362,4 +362,75 @@ exports.getLoggedInUser = async (req, res) => {
   }
 };
 
+exports.updateLoggedInUser = async (req, res) => {
+  try {
+    const userId = req.user._id;
+    const { username, email, phone, currentPassword, newPassword, confirmNewPassword } = req.body;
+
+    // Find the user
+    const user = await userModel.findById(userId);
+    if (!user) {
+      return res.status(404).json(errorResponse('User not found.', 404));
+    }
+
+    // Handle password change if requested
+    if (currentPassword && newPassword && confirmNewPassword) {
+      // Verify current password
+      const isMatch = await bcrypt.compare(currentPassword, user.password);
+      if (!isMatch) {
+        return res.status(401).json(errorResponse('Current password is incorrect.', 401));
+      }
+
+      // Check if new passwords match
+      if (newPassword !== confirmNewPassword) {
+        return res.status(400).json(errorResponse('New password and confirm password do not match.', 400));
+      }
+
+      // Hash and update the new password
+      const hashedPassword = await bcrypt.hash(newPassword, 10);
+      user.password = hashedPassword;
+    }
+
+    // Check if username is being changed and if it's already taken
+    if (username && username !== user.username) {
+      const existingUsername = await userModel.findOne({ username });
+      if (existingUsername) {
+        return res.status(409).json(errorResponse('Username already taken. Please choose a different one.', 409));
+      }
+      user.username = username;
+    }
+
+    // Check if email is being changed and if it's already taken
+    if (email && email !== user.email) {
+      const existingEmail = await userModel.findOne({ email });
+      if (existingEmail) {
+        return res.status(409).json(errorResponse('Email already in use.', 409));
+      }
+      user.email = email;
+    }
+
+    // Update phone if provided
+    if (phone) {
+      user.phone = phone;
+    }
+
+    // Save the updated user
+    await user.save();
+
+    return res.status(200).json(successResponse({
+      message: 'User updated successfully',
+      user: {
+        id: user._id,
+        username: user.username,
+        email: user.email,
+        role: user.role,
+        phone: user.phone,
+      }
+    }));
+  } catch (error) {
+    console.error('Update logged in user error:', error);
+    return res.status(500).json(errorResponse('Server error while updating user data.'));
+  }
+};
+
 

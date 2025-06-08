@@ -21,12 +21,12 @@ const PropertySchema = new Schema({
   },
   bedrooms: {
     type: Number,
-    required: true,
+    required: false,
     min: 1
   },
   bathrooms: {
     type: Number,
-    required: true,
+    required: false,
     min: 1
   },
   status: {

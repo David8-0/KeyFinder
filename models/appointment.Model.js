@@ -19,7 +19,7 @@ const AppointmentSchema = new Schema({
   appointmentDate: { type: Date, required: true },
   status: { 
     type: String, 
-    enum: ['scheduled', 'cancelled', 'completed', 'awaiting_payment'], 
+    enum: ['scheduled', 'cancelled', 'completed', 'awaiting_payment','awaiting_payment_confirmation'], 
     default: 'scheduled' 
   },
   type: { 
