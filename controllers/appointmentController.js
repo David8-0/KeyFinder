@@ -153,12 +153,8 @@ exports.updateAppointment = async (req, res) => {
       appointment.status = status;
     }
 
-    if (type) {
-      if (!['initial', 'payment'].includes(type)) {
-        return res.status(400).json(errorResponse('Invalid appointment type.'));
-      }
-
-      // Find the project containing the property
+    // Find the project and property if we need to update property status
+    if (status === 'completed' || type) {
       const project = await ProjectModel.findOne({ 'properties._id': appointment.propertyId });
       if (!project) {
         return res.status(404).json(errorResponse('Property not found.'));
@@ -170,17 +166,21 @@ exports.updateAppointment = async (req, res) => {
         return res.status(404).json(errorResponse('Property not found.'));
       }
 
-      // Update property status based on appointment type
-      // if (status &&  status !== 'completed') {
-      //   property.status = 'reserved';
-      // } else if (type === 'payment') {
-      //   property.status = 'sold';
-      // }
+      // Update property status if appointment is completed
+      if (status === 'completed') {
+        property.status = 'sold';
+      }
+      
+      // Handle type-specific updates if type is being changed
+      if (type) {
+        if (!['initial', 'payment'].includes(type)) {
+          return res.status(400).json(errorResponse('Invalid appointment type.'));
+        }
+        appointment.type = type;
+      }
 
       // Save the project to update the property status
       await project.save();
-      
-      appointment.type = type;
     }
 
     await appointment.save();
