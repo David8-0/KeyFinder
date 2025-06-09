@@ -4,7 +4,7 @@ const appointmentController = require('../controllers/appointmentController');
 const { protect } = require('../controllers/authController');
 
 // Protect all appointment routes
-router.use(protect);
+// router.use(protect);
 
 // Get my appointments
 router.get('/my-appointments',protect, appointmentController.getMyAppointments);
