@@ -374,6 +374,9 @@ exports.updateLoggedInUser = async (req, res) => {
     }
 
     // Handle password change if requested
+    if ((newPassword || confirmNewPassword) && (!currentPassword || currentPassword === "")) {
+      return res.status(400).json(errorResponse('Current password is invalid.', 400));
+    }
     if (currentPassword && newPassword && confirmNewPassword) {
       // Verify current password
       const isMatch = await bcrypt.compare(currentPassword, user.password);

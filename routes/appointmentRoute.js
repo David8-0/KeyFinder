@@ -13,7 +13,7 @@ router.get('/my-appointments',protect, appointmentController.getMyAppointments);
 router.get('/', appointmentController.getAllAppointments);
 
 // Get appointment by ID
-router.get('/aapointment/:id', appointmentController.getAppointmentById);
+router.get('/appointment/:id', appointmentController.getAppointmentById);
 
 // Create new appointment
 router.post('/', appointmentController.createAppointment);
