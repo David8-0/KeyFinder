@@ -7,6 +7,7 @@ const userRoutes = require('./routes/userRoute.js');
 const projectRoutes = require('./routes/projectRoute.js'); 
 const imagesRoutes = require('./routes/imagesRoutes.js');
 const appointmentRoutes = require('./routes/appointmentRoute.js');
+const statusRoutes = require('./routes/statusRoute.js');
 
 const app = express();
 
@@ -47,6 +48,9 @@ app.use('/api/images', imagesRoutes);
 
 // Mount appointment routes under /api/appointments
 app.use('/api/appointments', appointmentRoutes);
+
+// Mount status routes under /api/status
+app.use('/api/status', statusRoutes);
 
 // Health check or other routes
 app.get('/', (req, res) => {
