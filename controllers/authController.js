@@ -7,7 +7,7 @@ const { successResponse, errorResponse } = require('../utils/helpers');
 
 exports.signup = async (req, res) => {
   try {
-    const { username, email, password, confirmPassword, phone, role } = req.body;
+    const { username, email, password, confirmPassword, phone, role, image } = req.body;
 
     // 1. Basic validation
     if (!username || !email || !password || !confirmPassword || !phone) {
@@ -44,7 +44,8 @@ exports.signup = async (req, res) => {
       email,
       password: hashedPassword,
       phone,
-      role: userRole
+      role: userRole,
+      image
     });
 
     await newUser.save();
@@ -365,7 +366,7 @@ exports.getLoggedInUser = async (req, res) => {
 exports.updateLoggedInUser = async (req, res) => {
   try {
     const userId = req.user._id;
-    const { username, email, phone, currentPassword, newPassword, confirmNewPassword } = req.body;
+    const { username, email, phone, currentPassword, newPassword, confirmNewPassword, image } = req.body;
 
     // Find the user
     const user = await userModel.findById(userId);
@@ -415,6 +416,11 @@ exports.updateLoggedInUser = async (req, res) => {
     // Update phone if provided
     if (phone) {
       user.phone = phone;
+    }
+
+    // Update image if provided
+    if (image) {
+      user.image = image;
     }
 
     // Save the updated user

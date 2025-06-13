@@ -40,7 +40,7 @@ exports.getUserById = async (req, res) => {
 // Update user
 exports.updateUser = async (req, res) => {
   try {
-    const { username, email, phone, role } = req.body;
+    const { username, email, phone, role, image } = req.body;
     const userId = req.params.id;
 
     // Find the user
@@ -54,7 +54,7 @@ exports.updateUser = async (req, res) => {
     if (email) user.email = email;
     if (phone) user.phone = phone;
     if (role) user.role = role;
-
+    if (image) user.image = image;
     await user.save();
     
     // Return updated user without sensitive data

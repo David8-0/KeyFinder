@@ -1,6 +1,6 @@
 const multer = require('multer');
 const sharp = require('sharp');
-const acceptedTypes = ['property', 'project'];
+const acceptedTypes = ['property', 'project', 'user'];
 const multerStorage = multer.memoryStorage();
 const { deleteImagesfromServer } = require('../utils/helpers');
 

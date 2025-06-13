@@ -27,6 +27,7 @@ const UserSchema = new Schema({
     default: null
   },
   changecredentials: Date,
+  image: { type: String, default: null },
   favourites: [{
     project: { type: Schema.Types.ObjectId, ref: 'Project' },
     property: { type: Schema.Types.ObjectId }
