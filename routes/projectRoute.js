@@ -6,6 +6,7 @@ const projectController = require("../controllers/projectController.js");
 router.get("/", projectController.getAllProjects);
 router.get("/:id", projectController.getProjectById);
 router.get("/property/:id", projectController.getPropertyById);
+router.put("/property/:id", projectController.updatePropertyById);
 router.post("/", projectController.createProject);
 router.put("/:id", projectController.updateProject);
 router.delete("/:id", projectController.deleteProject);

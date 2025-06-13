@@ -40,12 +40,14 @@ exports.getPropertyById = async (req, res) => {
     // Find all projects and search for the property
     const projects = await ProjectModel.find({}).populate('properties');
     let foundProperty = null;
+    let projectId = null;
     
     // Search through all projects to find the property
     for (const project of projects) {
       const property = project.properties.find(p => p._id.toString() === propertyId);
       if (property) {
         foundProperty = property;
+        projectId = project._id;
         break;
       }
     }
@@ -54,7 +56,13 @@ exports.getPropertyById = async (req, res) => {
       return res.status(404).json(errorResponse('Property not found.', 404));
     }
     
-    return res.status(200).json(successResponse(foundProperty));
+    // Add projectId to the property data
+    const propertyWithProjectId = {
+      ...foundProperty.toObject(),
+      projectId
+    };
+    
+    return res.status(200).json(successResponse(propertyWithProjectId));
   } catch (error) {
     console.error('Get property error:', error);
     return res.status(500).json(errorResponse('Server error while fetching property.'));
@@ -308,5 +316,54 @@ exports.addPropertyToProject = async (req, res) => {
     return res.status(500).json(errorResponse('Server error while adding property.'));
   }
 };
+
+exports.updatePropertyById = async (req, res) => {
+  try {
+    const propertyId = req.params.id;
+    const updatedData = req.body;
+
+    // Find all projects and search for the property
+    const projects = await ProjectModel.find({}).populate('properties');
+    let foundProperty = null;
+    let projectId = null;
+    let projectIndex = -1;
+    let propertyIndex = -1;
+
+    // Search through all projects to find the property
+    for (let i = 0; i < projects.length; i++) {
+      const project = projects[i];
+      const index = project.properties.findIndex(p => p._id.toString() === propertyId);
+      if (index !== -1) {
+        foundProperty = project.properties[index];
+        projectId = project._id;
+        projectIndex = i;
+        propertyIndex = index;
+        break;
+      }
+    }
+
+    if (!foundProperty) {
+      return res.status(404).json(errorResponse('Property not found.', 404));
+    }
+
+    // Update the property with new data
+    const updatedProperty = {
+      ...foundProperty.toObject(),
+      ...updatedData,
+      _id: propertyId // Preserve the original ID
+    };
+
+    // Update the property in the project
+    const project = projects[projectIndex];
+    project.properties[propertyIndex] = updatedProperty;
+    await project.save();
+
+    return res.status(200).json(successResponse(updatedProperty));
+  } catch (error) {
+    console.error('Update property error:', error);
+    return res.status(500).json(errorResponse('Server error while updating property.'));
+  }
+};
+
 
 
