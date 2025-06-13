@@ -3,7 +3,15 @@ const { successResponse, errorResponse } = require('../utils/helpers');
 
 exports.getAllProjects = async (req, res) => {
   try {
-    const projects = await ProjectModel.find({}).populate('properties');
+    const { query } = req.query;
+    let filter = {};
+    
+    // If query parameter exists and is not empty, add name filter
+    if (query && query.trim() !== '') {
+      filter.name = { $regex: query, $options: 'i' }; // Case-insensitive search
+    }
+
+    const projects = await ProjectModel.find(filter).populate('properties');
     return res.status(200).json(successResponse(projects));
   } catch (error) {
     console.error('Get projects error:', error);
