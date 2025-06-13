@@ -63,12 +63,9 @@ exports.getPropertyById = async (req, res) => {
 
 exports.createProject = async (req, res) => {
   try {
-    const { name, description, location, developer, properties, image } = req.body;
+    const { name, description, developer, properties, image } = req.body;
     
-    // Basic validation
-    if (!name || !location || !location.coordinates) {
-      return res.status(400).json(errorResponse('Name and location with coordinates are required.'));
-    }
+  
 
     // Validate properties if provided
     if (properties && Array.isArray(properties)) {
@@ -86,10 +83,6 @@ exports.createProject = async (req, res) => {
       name,
       description,
       image,
-      location: {
-        type: 'Point',
-        coordinates: location.coordinates
-      },
       developer,
       properties: properties || []
     });
@@ -111,7 +104,7 @@ exports.createProject = async (req, res) => {
 
 exports.updateProject = async (req, res) => {
   try {
-    const { name, description, location, developer, properties, image } = req.body;
+    const { name, description, developer, properties, image } = req.body;
     const projectId = req.params.id;
 
     const project = await ProjectModel.findById(projectId);
@@ -134,12 +127,7 @@ exports.updateProject = async (req, res) => {
     // Update project fields
     if (name) project.name = name;
     if (description !== undefined) project.description = description;
-    if (location && location.coordinates) {
-      project.location = {
-        type: 'Point',
-        coordinates: location.coordinates
-      };
-    }
+   
     if (developer !== undefined) project.developer = developer;
     if (properties !== undefined) project.properties = properties;
     if (image !== undefined) project.image = image;
