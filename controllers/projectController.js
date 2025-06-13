@@ -222,3 +222,31 @@ exports.searchForProperties = async (req, res) => {
     return res.status(500).json(errorResponse('Server error while searching properties.'));
   }
 };
+
+exports.deleteProperty = async (req, res) => {
+  try {
+    const propertyId = req.params.id;
+    
+    // Find the project containing the property
+    const project = await ProjectModel.findOne({ 'properties._id': propertyId });
+    
+    if (!project) {
+      return res.status(404).json(errorResponse('Property not found.', 404));
+    }
+
+    // Remove the property from the project's properties array
+    project.properties = project.properties.filter(
+      property => property._id.toString() !== propertyId
+    );
+
+    // Save the updated project
+    await project.save();
+
+    return res.status(200).json(successResponse({
+      message: 'Property deleted successfully.'
+    }));
+  } catch (error) {
+    console.error('Delete property error:', error);
+    return res.status(500).json(errorResponse('Server error while deleting property.'));
+  }
+};
