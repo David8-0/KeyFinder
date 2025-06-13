@@ -11,5 +11,6 @@ router.put("/:id", projectController.updateProject);
 router.delete("/:id", projectController.deleteProject);
 router.post("/list-properties", projectController.searchForProperties);
 router.delete("/property/:id", projectController.deleteProperty);
+router.post("/:id/property", projectController.addPropertyToProject);
 
 module.exports = router;

@@ -250,3 +250,63 @@ exports.deleteProperty = async (req, res) => {
     return res.status(500).json(errorResponse('Server error while deleting property.'));
   }
 };
+
+exports.addPropertyToProject = async (req, res) => {
+  try {
+    const projectId = req.params.id;
+    const propertyData = req.body;
+
+    // Validate required property fields
+    if (!propertyData.title || !propertyData.description || !propertyData.type || 
+        !propertyData.areaRange || !propertyData.priceRange || !propertyData.bedrooms || 
+        !propertyData.bathrooms) {
+      return res.status(400).json(errorResponse('Missing required property fields.'));
+    }
+
+    // Validate property type
+    const validTypes = ['chalet', 'apartment', 'twin_villa', 'standalone_villa'];
+    if (!validTypes.includes(propertyData.type)) {
+      return res.status(400).json(errorResponse('Invalid property type.'));
+    }
+
+    // Validate area range
+    const validAreaRanges = ['less_than_100', '100_to_150', '150_to_200', 'over_200'];
+    if (!validAreaRanges.includes(propertyData.areaRange)) {
+      return res.status(400).json(errorResponse('Invalid area range.'));
+    }
+
+    // Validate price range
+    const validPriceRanges = ['2_to_3_million', '3_to_4_million', '4_to_5_million', 'over_5_million'];
+    if (!validPriceRanges.includes(propertyData.priceRange)) {
+      return res.status(400).json(errorResponse('Invalid price range.'));
+    }
+
+    // Validate bedrooms and bathrooms
+    if (propertyData.bedrooms < 1 || propertyData.bathrooms < 1) {
+      return res.status(400).json(errorResponse('Bedrooms and bathrooms must be at least 1.'));
+    }
+
+    // Find the project
+    const project = await ProjectModel.findById(projectId);
+    if (!project) {
+      return res.status(404).json(errorResponse('Project not found.', 404));
+    }
+
+    // Add the property to the project's properties array
+    project.properties.push(propertyData);
+    await project.save();
+
+    return res.status(200).json(successResponse({
+      message: 'Property added successfully.',
+      project
+    }));
+  } catch (error) {
+    console.error('Add property error:', error);
+    if (error.name === 'ValidationError') {
+      return res.status(400).json(errorResponse(error.message));
+    }
+    return res.status(500).json(errorResponse('Server error while adding property.'));
+  }
+};
+
+
