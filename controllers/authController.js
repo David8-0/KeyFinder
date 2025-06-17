@@ -96,6 +96,7 @@ exports.login = async (req, res) => {
         role: user.role,
         favourites: user.favourites,
         phone: user.phone,
+        image: user.image
       }
     }));
   } catch (error) {
@@ -355,6 +356,7 @@ exports.getLoggedInUser = async (req, res) => {
         role: user.role,
         favourites: user.favourites,
         phone: user.phone,
+        image: user.image
       }
     }));
   } catch (error) {
@@ -434,6 +436,7 @@ exports.updateLoggedInUser = async (req, res) => {
         email: user.email,
         role: user.role,
         phone: user.phone,
+        image: user.image
       }
     }));
   } catch (error) {
