@@ -13,7 +13,7 @@ const app = express();
 
 // Configure CORS with specific options
 app.use(cors({
-  origin: ['http://localhost:5173', 'http://127.0.0.1:5173'], // Add your frontend URL
+  origin: ['http://localhost:5173', 'http://127.0.0.1:5173', 'http://localhost:5174', 'http://127.0.0.1:5174'], // Add your frontend URL
   credentials: true,
   exposedHeaders: ['Content-Type', 'Content-Length']
 }));
