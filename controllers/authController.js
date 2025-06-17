@@ -134,10 +134,7 @@ exports.validateUserAndSendOtp = async (req, res) => {
     const text = `Your verification code is: ${otp}. This code will expire in 10 minutes.`;
     
     try {
-      console.log('Attempting to send OTP email to:', email);
-      await sendEmail(email, subject, text);
-      console.log('OTP email sent successfully to:', email);
-      
+      await sendEmail(email, subject, text);      
       return res.status(200).json(successResponse({
         message: 'Verification code sent successfully.',
         email: email

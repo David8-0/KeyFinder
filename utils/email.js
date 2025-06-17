@@ -7,7 +7,6 @@ exports.sendEmail = (email, subject, text) => {
         return Promise.reject(new Error('Email service configuration is incomplete'));
     }
 
-    console.log('Creating transporter with email:', process.env.FROM_EMAIL);
     
     let transporter = nodemailer.createTransport({
         service: 'gmail',
@@ -36,10 +35,6 @@ exports.sendEmail = (email, subject, text) => {
         text: `Hello,\n\n${text}\n\nBest regards,\nKeyFinder Team`
     };
 
-    console.log('Sending email with options:', {
-        to: email,
-        subject: subject
-    });
 
     return new Promise((resolve, reject) => {
         transporter.sendMail(mailOptions, function(error, info) {
